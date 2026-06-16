@@ -1,0 +1,18 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Copy requirements first (for better caching)
+COPY backend/requirements.txt ./backend/
+
+# Install dependencies
+RUN pip install --no-cache-dir -r backend/requirements.txt
+
+# Copy the rest of the application
+COPY backend/ ./backend/
+
+# Set working directory
+WORKDIR /app/backend
+
+# Run the application
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "10000"]
