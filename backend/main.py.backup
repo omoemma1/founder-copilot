@@ -1,0 +1,419 @@
+# backend/main.py
+from fastapi import FastAPI, WebSocket, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+import openai
+import os
+from dotenv import load_dotenv
+import json
+from datetime import datetime
+import asyncio
+
+# Load environment variables
+load_dotenv()
+
+# Initialize FastAPI
+app = FastAPI(title="Founder Copilot", version="0.1.0")
+
+# CORS - Allow your frontend to connect
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Change to your domain in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Models for request/response
+class ChatRequest(BaseModel):
+    message: str
+    role: str = "architect"  # architect, debug, founder, review
+    context: dict = {}
+
+class ChatResponse(BaseModel):
+    response: str
+    role: str
+    timestamp: str
+
+# ============================================
+# HEART OF THE SYSTEM - THE SYSTEM PROMPT
+# ============================================
+SYSTEM_PROMPTS = {
+    "architect": """You are an Elite Software Architect. Your thinking:
+    1. System design patterns and trade-offs
+    2. Scalability and performance considerations
+    3. Technology stack recommendations
+    4. Security and compliance
+    5. Cost optimization
+    
+    Always provide:
+    - Clear reasoning
+    - Multiple options with pros/cons
+    - Implementation steps
+    - Potential pitfalls""",
+    
+    "debug": """You are a Master Debugger. Your thinking:
+    1. Read error messages like a detective
+    2. Analyze stack traces
+    3. Identify root causes
+    4. Generate targeted fixes
+    5. Prevent recurrence
+    
+    Always provide:
+    - Exact error analysis
+    - Step-by-step fix
+    - Prevention strategies
+    - Testing recommendations""",
+    
+    "founder": """You are a Founder's Strategic Advisor. Your thinking:
+    1. Business impact of technical decisions
+    2. Resource optimization (time, money, people)
+    3. Product-market fit
+    4. Growth strategies
+    5. Risk assessment
+    
+    Always provide:
+    - Executive summary
+    - Actionable recommendations
+    - Timeline estimates
+    - Success metrics""",
+    
+    "review": """You are a Senior Code Reviewer. Your thinking:
+    1. Code quality and maintainability
+    2. Performance bottlenecks
+    3. Security vulnerabilities
+    4. Test coverage
+    5. Documentation
+    
+    Always provide:
+    - Line-by-line feedback
+    - Improvement suggestions
+    - Refactoring opportunities
+    - Best practices"""
+}
+
+# ============================================
+# THE CHAT ENGINE (OFFLINE + ONLINE)
+# ============================================
+class CopilotEngine:
+    def __init__(self):
+        # Try to use OpenAI if available
+        self.use_openai = bool(os.getenv("OPENAI_API_KEY"))
+        if self.use_openai:
+            openai.api_key = os.getenv("OPENAI_API_KEY")
+            self.model = "gpt-3.5-turbo"  # Fastest and cheapest
+        else:
+            # Fallback to local model (no API costs!)
+            print("⚠️ No OpenAI key found. Using offline mode.")
+            self.use_openai = False
+            # We'll implement offline fallback later
+    
+    async def chat(self, message: str, role: str, context: dict = None):
+        """Main chat function - handles everything"""
+        
+        # Get the system prompt for this role
+        system_prompt = SYSTEM_PROMPTS.get(role, SYSTEM_PROMPTS["architect"])
+        
+        # Build the user message with context
+        user_message = message
+        if context:
+            context_str = json.dumps(context, indent=2)
+            user_message = f"Context:\n{context_str}\n\nUser Question:\n{message}"
+        
+        if self.use_openai:
+            # Use OpenAI (fast, high quality)
+            try:
+                response = await self._call_openai(system_prompt, user_message)
+                return response
+            except Exception as e:
+                print(f"OpenAI error: {e}")
+                # Fallback to offline
+                return await self._offline_response(message, role)
+        else:
+            # Use offline mode
+            return await self._offline_response(message, role)
+    
+    async def _call_openai(self, system_prompt, user_message):
+        """Call OpenAI API with retry logic"""
+        try:
+            response = await openai.ChatCompletion.acreate(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_message}
+                ],
+                temperature=0.7,
+                max_tokens=2000
+            )
+            return response.choices[0].message.content
+        except Exception as e:
+            raise e
+    
+    async def _offline_response(self, message, role):
+        """Simple offline response - will be enhanced later"""
+        # This is a FALLBACK - we'll build a proper offline system
+        responses = {
+            "architect": "I'll help you architect this. Let me think about the system design...",
+            "debug": "I'm analyzing the issue. Let me trace the root cause...",
+            "founder": "From a business perspective, here's what I recommend...",
+            "review": "Let me review the code quality and suggest improvements..."
+        }
+        return f"{responses.get(role, '')}\n\nYour message: {message[:100]}..."
+
+# Create global engine instance
+engine = CopilotEngine()
+
+# ============================================
+# API ENDPOINTS
+# ============================================
+@app.post("/chat", response_model=ChatResponse)
+async def chat_endpoint(request: ChatRequest):
+    """Main chat endpoint"""
+    try:
+        response = await engine.chat(
+            message=request.message,
+            role=request.role,
+            context=request.context
+        )
+        
+        return ChatResponse(
+            response=response,
+            role=request.role,
+            timestamp=datetime.now().isoformat()
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/health")
+async def health_check():
+    """Check if the system is running"""
+    return {
+        "status": "healthy",
+        "openai_available": engine.use_openai,
+        "timestamp": datetime.now().isoformat()
+    }
+
+# ============================================
+# WEBSOCKET FOR REAL-TIME CHAT
+# ============================================
+@app.websocket("/ws/chat")
+async def websocket_chat(websocket: WebSocket):
+    await websocket.accept()
+    try:
+        while True:
+            # Receive message from client
+            data = await websocket.receive_text()
+            request = json.loads(data)
+            
+            # Process message
+            response = await engine.chat(
+                message=request.get("message", ""),
+                role=request.get("role", "architect"),
+                context=request.get("context", {})
+            )
+            
+            # Send response back
+            await websocket.send_text(json.dumps({
+                "response": response,
+                "timestamp": datetime.now().isoformat()
+            }))
+    except Exception as e:
+        print(f"WebSocket error: {e}")
+    finally:
+        await websocket.close()
+
+# ============================================
+# RUN THE SERVER
+# ============================================
+if __name__ == "__main__":
+    import uvicorn
+    print("🚀 Founder Copilot Starting...")
+    print(f"📡 API available at: http://localhost:8000")
+    print(f"📚 Docs at: http://localhost:8000/docs")
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Add to backend/main.py
+
+from services.repo_service import repo_service
+
+# ============================================
+# REPOSITORY ENDPOINTS
+# ============================================
+from pydantic import BaseModel
+
+class CloneRequest(BaseModel):
+    repo_url: str
+    branch: str = "main"
+
+class QueryRequest(BaseModel):
+    query: str
+    n_results: int = 5
+
+@app.post("/repo/clone")
+async def clone_repo(request: CloneRequest):
+    """Clone a GitHub repository"""
+    try:
+        repo_path = repo_service.clone_repository(request.repo_url, request.branch)
+        return {
+            "success": True,
+            "repo_path": repo_path,
+            "message": f"Repository cloned successfully"
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.post("/repo/analyze")
+async def analyze_repo():
+    """Analyze the current repository"""
+    try:
+        results = repo_service.analyze_codebase()
+        return {
+            "success": True,
+            "files_analyzed": len(results),
+            "results": results[:10]  # Return first 10 for preview
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.post("/repo/search")
+async def search_code(request: QueryRequest):
+    """Search codebase using natural language"""
+    try:
+        results = repo_service.search_code(request.query, request.n_results)
+        return {
+            "success": True,
+            "results": results
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.get("/repo/summary")
+async def get_summary():
+    """Get architecture summary"""
+    try:
+        summary = repo_service.get_architecture_summary()
+        return {
+            "success": True,
+            "summary": summary
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.post("/chat/with-repo")
+async def chat_with_repo(request: ChatRequest):
+    """Chat with your codebase context"""
+    try:
+        # Search for relevant code
+        context = repo_service.search_code(request.message, n_results=3)
+        
+        # Create context for the AI
+        context_str = "\n\n".join([
+            f"File: {c['metadata']['file_path']}\nContent:\n{c['content']}"
+            for c in context
+        ])
+        
+        # Add context to the chat request
+        if request.context:
+            request.context['code_context'] = context_str
+        else:
+            request.context = {'code_context': context_str}
+        
+        # Get response from main chat
+        response = await engine.chat(
+            message=request.message,
+            role=request.role,
+            context=request.context
+        )
+        
+        return ChatResponse(
+            response=response,
+            role=request.role,
+            timestamp=datetime.now().isoformat()
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    # Add to backend/main.py
+
+from services.debug_service import debugger
+from pydantic import BaseModel
+
+class CommandRequest(BaseModel):
+    command: str
+    cwd: str = None
+
+@app.post("/debug/execute")
+async def execute_command(request: CommandRequest):
+    """Execute a command and debug the output"""
+    try:
+        result = await debugger.execute_command(request.command, request.cwd)
+        return result
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.get("/debug/history")
+async def get_debug_history(limit: int = 10):
+    """Get command execution history"""
+    return {
+        "success": True,
+        "commands": debugger.get_command_history(limit)
+    }
+
+@app.post("/debug/analyze")
+async def analyze_error(request: CommandRequest):
+    """Analyze an error without executing"""
+    # Simulate analysis
+    analysis = {
+        "command": request.command,
+        "potential_issues": [
+            "Check if all dependencies are installed",
+            "Verify file permissions",
+            "Check for syntax errors"
+        ],
+        "suggestions": [
+            "Run the command with --help for options",
+            "Check the documentation",
+            "Look for similar issues on Stack Overflow"
+        ]
+    }
+    return analysis
+
+@app.post("/chat/debug")
+async def debug_chat(request: ChatRequest):
+    """Chat specifically for debugging"""
+    try:
+        # Add debugging context
+        context = request.context or {}
+        if 'error' in context:
+            # Analyze the error
+            error_analysis = await debugger.execute_command(
+                f"echo 'Analyzing: {context['error']}'"
+            )
+            context['debug_analysis'] = error_analysis
+        
+        response = await engine.chat(
+            message=request.message,
+            role="debug",
+            context=context
+        )
+        
+        return ChatResponse(
+            response=response,
+            role="debug",
+            timestamp=datetime.now().isoformat()
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
