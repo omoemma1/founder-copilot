@@ -1,71 +1,347 @@
-
-        <!-- AI Founders Hub Website -->
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>AI Founders Hub</title>
-            <link rel="stylesheet" href="style.css">
-        </head>
-        <body>
-            <!-- Hero Section -->
-            <section id="hero">
-                <h1>Welcome to AI Founders Hub</h1>
-                <p>We provide AI consulting services to help your business thrive</p>
-                <button>Learn More</button>
-            </section>
-            <!-- Services Section -->
-            <section id="services">
-                <h2>Our Services</h2>
-                <div class="service">
-                    <h3>AI Strategy</h3>
-                    <p>We help you develop a comprehensive AI strategy for your business</p>
-                </div>
-                <div class="service">
-                    <h3>Machine Learning</h3>
-                    <p>We provide machine learning solutions to improve your business operations</p>
-                </div>
-                <div class="service">
-                    <h3>Natural Language Processing</h3>
-                    <p>We help you develop NLP solutions to improve customer engagement</p>
-                </div>
-                <div class="service">
-                    <h3>Computer Vision</h3>
-                    <p>We provide computer vision solutions to improve your business operations</p>
-                </div>
-            </section>
-            <!-- Testimonials Section -->
-            <section id="testimonials">
-                <h2>What Our Clients Say</h2>
-                <div class="testimonial">
-                    <p>AI Founders Hub has been instrumental in helping us develop our AI strategy</p>
-                    <p>- John Doe, CEO of XYZ Corporation</p>
-                </div>
-                <div class="testimonial">
-                    <p>The team at AI Founders Hub is highly knowledgeable and professional</p>
-                    <p>- Jane Smith, CTO of ABC Inc.</p>
-                </div>
-                <div class="testimonial">
-                    <p>We have seen significant improvements in our business operations since working with AI Founders Hub</p>
-                    <p>- Bob Johnson, CEO of DEF Ltd.</p>
-                </div>
-            </section>
-            <!-- Contact Form Section -->
-            <section id="contact">
-                <h2>Get in Touch</h2>
-                <form>
-                    <input type="text" placeholder="Name" required>
-                    <input type="email" placeholder="Email" required>
-                    <textarea placeholder="Message" required></textarea>
-                    <button>Send</button>
-                </form>
-            </section>
-            <!-- Footer Section -->
-            <footer>
-                <p>&copy; 2024 AI Founders Hub</p>
-            </footer>
-            <script src="script.js"></script>
-        </body>
-        </html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🤖 Founder Copilot</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a1a;
+            color: #e0e0e0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
         
+        /* Header */
+        .header {
+            background: #1a1a2e;
+            padding: 15px 20px;
+            border-bottom: 1px solid #333;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-shrink: 0;
+        }
+        .header h1 { font-size: 1.3rem; color: #fff; }
+        .header .status {
+            font-size: 0.8rem;
+            color: #4ade80;
+            margin-left: auto;
+        }
+        
+        /* Chat Area */
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        /* Messages */
+        .message {
+            max-width: 85%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            animation: fadeIn 0.3s ease;
+        }
+        .message.user {
+            align-self: flex-end;
+            background: #2563eb;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        .message.bot {
+            align-self: flex-start;
+            background: #1e293b;
+            color: #e0e0e0;
+            border-bottom-left-radius: 4px;
+        }
+        .message .role-tag {
+            font-size: 0.65rem;
+            opacity: 0.6;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .message .content {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            line-height: 1.6;
+        }
+        .message .content code {
+            background: #0a0a1a;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+        .message .content pre {
+            background: #0a0a1a;
+            padding: 12px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 8px 0;
+            font-size: 0.85rem;
+        }
+        
+        /* Typing indicator */
+        .typing {
+            align-self: flex-start;
+            background: #1e293b;
+            padding: 12px 20px;
+            border-radius: 12px;
+            border-bottom-left-radius: 4px;
+            display: none;
+        }
+        .typing span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #4ade80;
+            border-radius: 50%;
+            margin: 0 2px;
+            animation: bounce 1.4s infinite;
+        }
+        .typing span:nth-child(2) { animation-delay: 0.2s; }
+        .typing span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes bounce {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-8px); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Input Area */
+        .input-area {
+            background: #1a1a2e;
+            padding: 15px 20px;
+            border-top: 1px solid #333;
+            display: flex;
+            gap: 12px;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+        .input-area textarea {
+            flex: 1;
+            background: #0d0d20;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 12px;
+            color: #e0e0e0;
+            font-size: 1rem;
+            resize: none;
+            min-height: 50px;
+            max-height: 150px;
+            font-family: inherit;
+        }
+        .input-area textarea:focus {
+            outline: none;
+            border-color: #2563eb;
+        }
+        .input-area button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+        .input-area button:hover { background: #1d4ed8; }
+        .input-area button:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        /* Quick actions */
+        .quick-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            padding: 0 20px 10px 20px;
+            flex-shrink: 0;
+            background: #0a0a1a;
+        }
+        .quick-actions button {
+            background: #1e293b;
+            color: #c0c0c0;
+            border: 1px solid #333;
+            border-radius: 20px;
+            padding: 6px 14px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .quick-actions button:hover {
+            background: #2563eb;
+            color: white;
+            border-color: #2563eb;
+        }
+        
+        /* Scrollbar */
+        .chat-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        .chat-container::-webkit-scrollbar-track {
+            background: #0a0a1a;
+        }
+        .chat-container::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 3px;
+        }
+        
+        @media (max-width: 600px) {
+            .message { max-width: 92%; }
+            .header h1 { font-size: 1rem; }
+            .input-area { flex-direction: column; }
+            .input-area button { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+    <h1>🤖 Founder Copilot</h1>
+    <span class="status">● Online</span>
+</div>
+
+<!-- Quick Actions -->
+<div class="quick-actions">
+    <button onclick="quickPrompt('Write a Python function to reverse a string')">📝 Code</button>
+    <button onclick="quickPrompt('Debug this error: TypeError: NoneType object is not subscriptable')">🐛 Debug</button>
+    <button onclick="quickPrompt('Design a REST API architecture for a todo app')">🏗️ Architect</button>
+    <button onclick="quickPrompt('What features should my MVP have?')">💡 Strategy</button>
+    <button onclick="quickPrompt('Explain async/await in Python')">📚 Learn</button>
+</div>
+
+<!-- Chat Messages -->
+<div class="chat-container" id="chat">
+    <div class="message bot">
+        <div class="role-tag">👋 Welcome</div>
+        <div class="content">
+            I'm your <strong>Founder Copilot</strong>!<br><br>
+            I can help you with:
+            • 💻 Write & debug code<br>
+            • 🏗️ Design architecture<br>
+            • 💡 Business strategy<br>
+            • 📚 Explain concepts<br><br>
+            <em>Just type anything below!</em>
+        </div>
+    </div>
+</div>
+
+<!-- Typing Indicator -->
+<div class="typing" id="typing">
+    <span></span><span></span><span></span>
+</div>
+
+<!-- Input Area -->
+<div class="input-area">
+    <textarea id="input" rows="1" placeholder="Type your message here..." onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault(); sendMessage();}"></textarea>
+    <button id="sendBtn" onclick="sendMessage()">Send</button>
+</div>
+
+<script>
+    const API_URL = 'https://founder-copilot-tgf3.onrender.com/chat';
+    const chat = document.getElementById('chat');
+    const input = document.getElementById('input');
+    const typing = document.getElementById('typing');
+    const sendBtn = document.getElementById('sendBtn');
+    
+    // Auto-resize textarea
+    input.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 150) + 'px';
+    });
+    
+    function quickPrompt(text) {
+        input.value = text;
+        sendMessage();
+    }
+    
+    function sendMessage() {
+        const message = input.value.trim();
+        if (!message) return;
+        
+        // Add user message
+        addMessage('user', message);
+        input.value = '';
+        input.style.height = 'auto';
+        sendBtn.disabled = true;
+        
+        // Show typing
+        typing.style.display = 'block';
+        chat.scrollTop = chat.scrollHeight;
+        
+        // Send to API
+        fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                message: message, 
+                role: 'architect' 
+            })
+        })
+        .then(r => r.json())
+        .then(data => {
+            typing.style.display = 'none';
+            sendBtn.disabled = false;
+            addMessage('bot', data.response || 'No response');
+        })
+        .catch(err => {
+            typing.style.display = 'none';
+            sendBtn.disabled = false;
+            addMessage('bot', '❌ Error: ' + err.message);
+        });
+    }
+    
+    function addMessage(role, content) {
+        const div = document.createElement('div');
+        div.className = 'message ' + role;
+        
+        const tag = document.createElement('div');
+        tag.className = 'role-tag';
+        tag.textContent = role === 'user' ? '👤 You' : '🤖 Copilot';
+        div.appendChild(tag);
+        
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'content';
+        contentDiv.innerHTML = formatContent(content);
+        div.appendChild(contentDiv);
+        
+        chat.appendChild(div);
+        chat.scrollTop = chat.scrollHeight;
+    }
+    
+    function formatContent(text) {
+        // Convert code blocks
+        text = text.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
+            return `<pre><code>${escapeHtml(code.trim())}</code></pre>`;
+        });
+        
+        // Convert inline code
+        text = text.replace(/`([^`]+)`/g, (match, code) => {
+            return `<code>${escapeHtml(code)}</code>`;
+        });
+        
+        // Convert newlines to <br>
+        text = text.replace(/\n/g, '<br>');
+        
+        return text;
+    }
+    
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+</script>
+
+</body>
+</html>
