@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🤖 Founder Copilot</title>
+    <title>Founder Copilot</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -158,7 +158,7 @@
         .input-area button:hover { background: #1d4ed8; }
         .input-area button:disabled { opacity: 0.5; cursor: not-allowed; }
         
-        /* Quick actions */
+        /* Quick actions - Like DeepSeek's suggestions! */
         .quick-actions {
             display: flex;
             gap: 8px;
@@ -183,18 +183,6 @@
             border-color: #2563eb;
         }
         
-        /* Scrollbar */
-        .chat-container::-webkit-scrollbar {
-            width: 6px;
-        }
-        .chat-container::-webkit-scrollbar-track {
-            background: #0a0a1a;
-        }
-        .chat-container::-webkit-scrollbar-thumb {
-            background: #333;
-            border-radius: 3px;
-        }
-        
         @media (max-width: 600px) {
             .message { max-width: 92%; }
             .header h1 { font-size: 1rem; }
@@ -211,12 +199,12 @@
     <span class="status">● Online</span>
 </div>
 
-<!-- Quick Actions -->
+<!-- Quick Actions - Like DeepSeek's suggested prompts -->
 <div class="quick-actions">
-    <button onclick="quickPrompt('Write a Python function to reverse a string')">📝 Code</button>
+    <button onclick="quickPrompt('Write a Python function to reverse a string')">📝 Write Code</button>
     <button onclick="quickPrompt('Debug this error: TypeError: NoneType object is not subscriptable')">🐛 Debug</button>
-    <button onclick="quickPrompt('Design a REST API architecture for a todo app')">🏗️ Architect</button>
-    <button onclick="quickPrompt('What features should my MVP have?')">💡 Strategy</button>
+    <button onclick="quickPrompt('Design a REST API architecture for a todo app')">🏗️ Architecture</button>
+    <button onclick="quickPrompt('What features should my MVP have?')">💡 Business</button>
     <button onclick="quickPrompt('Explain async/await in Python')">📚 Learn</button>
 </div>
 
@@ -225,13 +213,13 @@
     <div class="message bot">
         <div class="role-tag">👋 Welcome</div>
         <div class="content">
-            I'm your <strong>Founder Copilot</strong>!<br><br>
-            I can help you with:
-            • 💻 Write & debug code<br>
-            • 🏗️ Design architecture<br>
-            • 💡 Business strategy<br>
-            • 📚 Explain concepts<br><br>
-            <em>Just type anything below!</em>
+            <strong>I'm your Founder Copilot!</strong><br><br>
+            Just type anything - I handle <strong>everything</strong>:<br>
+            • 💻 Code generation & debugging<br>
+            • 🏗️ System architecture & design<br>
+            • 💡 Business strategy & advice<br>
+            • 📚 Learning & explanations<br><br>
+            <em>Like DeepSeek - just ask naturally!</em>
         </div>
     </div>
 </div>
@@ -279,13 +267,13 @@
         typing.style.display = 'block';
         chat.scrollTop = chat.scrollHeight;
         
-        // Send to API
+        // Send to API - ONE CHAT FOR EVERYTHING!
         fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 message: message, 
-                role: 'architect' 
+                role: 'architect' // The AI figures out what you need!
             })
         })
         .then(r => r.json())
