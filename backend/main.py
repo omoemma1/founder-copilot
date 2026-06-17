@@ -1,4 +1,5 @@
 # backend/main.py - COMPLETE WORKING VERSION WITH GROQ!
+from fastapi.responses import HTMLResponse
 from fastapi import FastAPI, WebSocket, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -292,3 +293,19 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=8000
     )
+
+# Serve index.html
+@app.get("/", response_class=HTMLResponse)
+@app.get("/index.html", response_class=HTMLResponse)
+async def serve_index():
+    try:
+        # Try to find the file in the current directory
+        with open("index.html", "r", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        # If not found, try the backend folder
+        try:
+            with open("backend/index.html", "r", encoding="utf-8") as f:
+                return f.read()
+        except FileNotFoundError:
+            return HTMLResponse("<h1>index.html not found</h1>", status_code=404)
